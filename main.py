@@ -7,10 +7,10 @@ class Main:
     def run(self):
         if self.connexion.connect():
             print("Connection successful")
-            rows = self.connexion.execute_query('SELECT * FROM TesteTable')
+            rows = self.connexion.execute_query('SELECT * FROM box')
             if rows:
                 for row in rows:
-                    print(f"id: {row['Teste']}, name: {row['Field1']}")
+                    print(f"id: {row['id']}, name: {row['long']}")
             self.connexion.disconnect()
             print("Connection closed")
         else:
