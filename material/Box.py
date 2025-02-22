@@ -1,4 +1,6 @@
 from connexion import ConnexionAccess
+from tool import Periode, Rent, Paiement
+
 
 class Box:
     def __init__(self, idbox, idmarket, num, long, larg, x, y):
@@ -10,18 +12,6 @@ class Box:
         self.__x = x
         self.__y = y
     
-    def showBox(self):
-        print(f"{self.__idbox}\t{self.__idmarket}\t{self.__num}\t{self.__long}\t{self.__larg}\t{self.__x}\t{self.__y}")
-
-    @staticmethod
-    def getBoxs():
-        conn = ConnexionAccess.getConnexion()
-        query = "SELECT * FROM boxs"
-        result = conn.cursor().execute(query)
-        rows = result.fetchall()
-        boxs = [Box(*row) for row in rows]
-        return boxs
-
     def get_idbox(self):
         return self.__idbox
 
@@ -63,3 +53,29 @@ class Box:
 
     def set_y(self, value):
         self.__y = value
+
+    def showBox(self):
+        print(f"{self.__idbox}\t{self.__idmarket}\t{self.__num}\t{self.__long}\t{self.__larg}\t{self.__x}\t{self.__y}")
+
+    @staticmethod
+    def getBoxs():
+        conn = ConnexionAccess.getConnexion()
+        query = "SELECT * FROM boxs"
+        result = conn.cursor().execute(query)
+        rows = result.fetchall()
+        boxs = [Box(*row) for row in rows]
+        return boxs
+    
+    def calculRent(self, yearmonth):
+        periode = Periode.getPeriode(yearmonth)
+        rent_per_sqm = Rent.getRent(self.__idmarket, periode.get_idperiode())
+        area = self.__long * self.__larg
+        total_rent = area * rent_per_sqm.get_value()
+        return total_rent
+    
+    def isPaied(self, yearmonth):
+        paiement = Paiement.getPaiement(yearmonth, self.__idbox)
+        if paiement is None:
+            return False
+        return paiement.get_value() == self.calculRent(yearmonth)
+    
