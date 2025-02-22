@@ -1,6 +1,7 @@
+import datetime
+from dateutil.relativedelta import relativedelta
 from connexion import ConnexionAccess
 from tool import Periode, Rent, Paiement
-
 
 class Box:
     def __init__(self, idbox, idmarket, num, long, larg, x, y):
@@ -11,7 +12,7 @@ class Box:
         self.__larg = larg
         self.__x = x
         self.__y = y
-    
+
     def get_idbox(self):
         return self.__idbox
 
@@ -58,6 +59,16 @@ class Box:
         print(f"{self.__idbox}\t{self.__idmarket}\t{self.__num}\t{self.__long}\t{self.__larg}\t{self.__x}\t{self.__y}")
 
     @staticmethod
+    def getBoxById(idbox):
+        conn = ConnexionAccess.getConnexion()
+        query = "SELECT * FROM boxs WHERE idbox = ?"
+        result = conn.cursor().execute(query, (idbox,))
+        row = result.fetchone()
+        if row:
+            return Box(*row)
+        return None
+    
+    @staticmethod
     def getBoxs():
         conn = ConnexionAccess.getConnexion()
         query = "SELECT * FROM boxs"
@@ -65,17 +76,63 @@ class Box:
         rows = result.fetchall()
         boxs = [Box(*row) for row in rows]
         return boxs
-    
+
     def calculRent(self, yearmonth):
         periode = Periode.getPeriode(yearmonth)
         rent_per_sqm = Rent.getRent(self.__idmarket, periode.get_idperiode())
         area = self.__long * self.__larg
-        total_rent = area * rent_per_sqm.get_value()
+        total_rent = area * rent_per_sqm.get_montant()
         return total_rent
-    
-    def isPaied(self, yearmonth):
+
+    def getPourcent(self, yearmonth):
         paiement = Paiement.getPaiement(yearmonth, self.__idbox)
         if paiement is None:
-            return False
-        return paiement.get_value() == self.calculRent(yearmonth)
-    
+            return 0
+        total_rent = self.calculRent(yearmonth)
+        print(f"Total rent: { (paiement.get_montant() / total_rent)}")
+        return (paiement.get_montant() / total_rent)
+
+    def insertPaiement(self, datepaiement, montant):
+        conn = ConnexionAccess.getConnexion()
+        cursor = conn.cursor()
+        montant = float(montant)  
+        query = """
+            SELECT TOP 1 * FROM paiements 
+            WHERE idbox = ? 
+            ORDER BY paied DESC
+        """
+        result = cursor.execute(query, (self.__idbox,))
+        last_payment = result.fetchone()
+        if last_payment:
+            last_paied_date = last_payment[3]  
+            next_paied_date = last_paied_date + relativedelta(months=1)
+            last_payment_montant = last_payment[2]
+            yearmonth = last_paied_date.strftime('%Y-%m')
+            rent = self.calculRent(yearmonth)
+            if last_payment_montant < rent:
+                remaining_rent = rent - last_payment_montant
+                if montant >= remaining_rent:
+                    query = "UPDATE paiements SET montant = ? WHERE idpaiement = ?"
+                    cursor.execute(query, (last_payment_montant + remaining_rent, last_payment[0]))
+                    montant -= remaining_rent
+                else:
+                    query = "UPDATE paiements SET montant = ? WHERE idpaiement = ?"
+                    cursor.execute(query, (last_payment_montant + montant, last_payment[0]))
+                    montant = 0
+        else:
+            next_paied_date = datetime.datetime(2025, 1, 1)  
+        while montant > 0:
+            yearmonth = next_paied_date.strftime('%Y-%m')
+            rent = self.calculRent(yearmonth)
+            if montant >= rent:
+                query = "INSERT INTO paiements (idbox, montant, paied, datepaiement) VALUES (?, ?, ?, ?)"
+                cursor.execute(query, (self.__idbox, rent, next_paied_date.strftime('%Y-%m-%d'), datepaiement))
+                montant -= rent
+                next_paied_date += relativedelta(months=1)
+            else:
+                query = "INSERT INTO paiements (idbox, montant, paied, datepaiement) VALUES (?, ?, ?, ?)"
+                cursor.execute(query, (self.__idbox, montant, next_paied_date.strftime('%Y-%m-%d'), datepaiement))
+                montant = 0
+        conn.commit()
+        cursor.close()
+        conn.close()

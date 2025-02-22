@@ -1,10 +1,12 @@
+import datetime
+from dateutil.relativedelta import relativedelta
 from connexion import ConnexionAccess
 
 class Paiement:
-    def __init__(self, idpaiement, idbox, value, paied, datepaiement):
+    def __init__(self, idpaiement, idbox, montant, paied, datepaiement):
         self.__idpaiement = idpaiement
         self.__idbox = idbox
-        self.__value = value
+        self.__montant = montant
         self.__paied = paied
         self.__datepaiement = datepaiement
 
@@ -20,11 +22,11 @@ class Paiement:
     def set_idbox(self, value):
         self.__idbox = value
 
-    def get_value(self):
-        return self.__value
+    def get_montant(self):
+        return self.__montant
 
-    def set_value(self, value):
-        self.__value = value
+    def set_montant(self, value):
+        self.__montant = value
 
     def get_paied(self):
         return self.__paied
