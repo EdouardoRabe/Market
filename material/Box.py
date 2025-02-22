@@ -73,9 +73,12 @@ class Box:
         total_rent = area * rent_per_sqm.get_value()
         return total_rent
     
-    def isPaied(self, yearmonth):
+    def getPourcent(self, yearmonth):
         paiement = Paiement.getPaiement(yearmonth, self.__idbox)
         if paiement is None:
-            return False
-        return paiement.get_value() == self.calculRent(yearmonth)
+            return 0
+        total_rent = self.calculRent(yearmonth)
+        print(f"Total rent: { (paiement.get_value() / total_rent)}")
+        return (paiement.get_value() / total_rent) 
+    
     
