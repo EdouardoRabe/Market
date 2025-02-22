@@ -10,18 +10,6 @@ class Box:
         self.__x = x
         self.__y = y
     
-    def showBox(self):
-        print(f"{self.__idbox}\t{self.__idmarket}\t{self.__num}\t{self.__long}\t{self.__larg}\t{self.__x}\t{self.__y}")
-
-    @staticmethod
-    def getBoxs():
-        conn = ConnexionAccess.getConnexion()
-        query = "SELECT * FROM boxs"
-        result = conn.cursor().execute(query)
-        rows = result.fetchall()
-        boxs = [Box(*row) for row in rows]
-        return boxs
-
     def get_idbox(self):
         return self.__idbox
 
@@ -63,3 +51,15 @@ class Box:
 
     def set_y(self, value):
         self.__y = value
+
+    def showBox(self):
+        print(f"{self.__idbox}\t{self.__idmarket}\t{self.__num}\t{self.__long}\t{self.__larg}\t{self.__x}\t{self.__y}")
+
+    @staticmethod
+    def getBoxs():
+        conn = ConnexionAccess.getConnexion()
+        query = "SELECT * FROM boxs"
+        result = conn.cursor().execute(query)
+        rows = result.fetchall()
+        boxs = [Box(*row) for row in rows]
+        return boxs
