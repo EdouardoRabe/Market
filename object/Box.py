@@ -12,3 +12,11 @@ class Box:
     
     def showBox(self):
         print(f"{self.idbox}\t{self.idmarket}\t{self.num}\t{self.long}\t{self.larg}\t{self.x}\t{self.y}")
+
+    def getBoxs(self):
+        conn = ConnexionAccess.getConnexion()
+        query = "SELECT * FROM boxs WHERE idmarket = ?"
+        result = conn.cursor().execute(query, (self.idmarket,))
+        rows = result.fetchall()
+        boxs = [Box(*row) for row in rows]
+        return boxs
