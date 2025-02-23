@@ -14,7 +14,9 @@ class WebApp:
         @self.app.route('/')
         def payment():
             boxes = Box.getBoxs()
-            return render_template('paiement.html', boxes=boxes)
+            message = request.args.get('message', '')
+            message_type = request.args.get('message_type', '')
+            return render_template('paiement.html', boxes=boxes, message=message, message_type=message_type)
 
         @self.app.route('/process_payment', methods=['POST'])
         def process_payment():
@@ -24,10 +26,18 @@ class WebApp:
             print(idbox, datepaiement, montant)
             box = Box.getBoxById(idbox)
             if box:
-                montant = float(montant)
-                box.insertPaiement(datepaiement, montant)
-            return redirect(url_for('payment'))
-            
+                try:
+                    montant = float(montant)
+                    box.insertPaiement(datepaiement, montant)
+                    message = 'Payment processed successfully.'
+                    message_type = 'success'
+                except Exception as e:
+                    message = f'Error processing payment: {str(e)}'
+                    message_type = 'error'
+            else:
+                message = 'Box not found.'
+                message_type = 'error'
+            return redirect(url_for('payment', message=message, message_type=message_type))
 
     def run(self, host='127.0.0.1', port=5000):
         self.app.run(debug=False, host=host, port=port)
