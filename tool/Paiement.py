@@ -52,9 +52,16 @@ class Paiement:
     @staticmethod
     def getPaiement(yearmonth, idbox):
         conn = ConnexionAccess.getConnexion()
-        query = "SELECT * FROM paiements WHERE FORMAT(paied, 'yyyy-mm') = ? AND idbox = ?"
+        query = """
+            SELECT idbox, SUM(montant) as montant2, paied 
+            FROM paiements 
+            WHERE FORMAT(paied, 'yyyy-mm') = ? AND idbox = ? 
+            GROUP BY idbox, paied
+        """
         result = conn.cursor().execute(query, (yearmonth, idbox))
         row = result.fetchone()
         if row:
-            return Paiement(*row)
+            idbox, montant2, paied = row
+            return Paiement(0, idbox, montant2, paied, datetime.datetime.now())
         return None
+   

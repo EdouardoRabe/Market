@@ -4,24 +4,125 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Faire un paiement</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(45deg, #1a1a1a,rgb(70, 69, 69));
+            color: #fff;
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+        }
+        .payment-container {
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #00ff88;
+            margin-bottom: 30px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            color: #00ff88;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 5px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #00ff88, #00b8ff);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        .message {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
 </head>
 <body>
-    <h1>Faire un paiement</h1>
-    <form action="/process_payment" method="post">
-        <label for="idbox">ID Box:</label>
-        <select id="idbox" name="idbox">
-            {% for box in boxes %}
-                <option value="{{ box.get_idbox() }}">{{ box.get_idbox() }}</option>
-            {% endfor %}
-        </select>
-        <br><br>
-        <label for="datepaiement">Date de paiement:</label>
-        <input type="date" id="datepaiement" name="datepaiement" required>
-        <br><br>
-        <label for="montant">Montant:</label>
-        <input type="number" id="montant" name="montant" required>
-        <br><br>
-        <button type="submit">Valider</button>
-    </form>
+    <div class="container">
+        {% if message %}
+            <div class="message {{ message_type }}">{{ message }}</div>
+        {% endif %}
+        <div class="payment-container">
+            <h1>Faire un paiement</h1>
+            <form action="/process_payment" method="post">
+                <div class="mb-3">
+                    <label for="idbox" class="form-label">ID Box</label>
+                    <select class="form-select" id="idbox" name="idbox">
+                        {% for box in boxes %}
+                            <option value="{{ box.get_idbox() }}">{{ box.get_idbox() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="datepaiement" class="form-label">Date de paiement</label>
+                    <input type="date" class="form-control" id="datepaiement" name="datepaiement" required>
+                </div>
+                <div class="mb-3">
+                    <label for="montant" class="form-label">Montant</label>
+                    <input type="number" class="form-control" id="montant" name="montant" required>
+                </div>
+                <button type="submit" class="btn btn-submit">Valider</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
