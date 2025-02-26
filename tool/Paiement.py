@@ -50,8 +50,7 @@ class Paiement:
         return paiements
     
     @staticmethod
-    def getPaiement(yearmonth, idbox):
-        conn = ConnexionAccess.getConnexion()
+    def getPaiement(conn, yearmonth, idbox):
         query = """
             SELECT idbox, SUM(montant) as montant2, paied 
             FROM paiements 

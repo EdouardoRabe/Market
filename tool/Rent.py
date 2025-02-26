@@ -32,8 +32,7 @@ class Rent:
         self.__montant = value
 
     @staticmethod
-    def getRent(idmarket, idperiode):
-        conn = ConnexionAccess.getConnexion()
+    def getRent(conn,idmarket, idperiode):
         query = "SELECT * FROM rents WHERE idmarket = ? AND idperiode = ?"
         cursor = conn.cursor()
         cursor.execute(query, (idmarket, idperiode))
