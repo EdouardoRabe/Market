@@ -41,8 +41,7 @@ class Location:
         self.__fin = value
         
     @staticmethod
-    def getLocationByBoxAndYearMonth(idbox, yearmonth):
-        conn = ConnexionAccess.getConnexion()
+    def getLocationByBoxAndYearMonth(conn,idbox, yearmonth):
         query = """
         SELECT * FROM locations 
         WHERE idbox = ? AND ? BETWEEN FORMAT(debut, 'yyyy-mm') AND FORMAT(fin, 'yyyy-mm')

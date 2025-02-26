@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkcalendar import DateEntry
+from connexion import ConnexionAccess
 from material import Market, Box
 import threading
 import webbrowser
@@ -11,6 +12,7 @@ from datetime import datetime
 
 class MarketApp:
     def __init__(self, root):
+        self.conn = ConnexionAccess.getConnexion()
         self.root = root
         self.root.title("Market Management App")
         self.root.geometry("800x700")
@@ -32,6 +34,7 @@ class MarketApp:
         self.init_home_page()
         self.init_payment_page()
         self.show_home()
+        self.root.protocol("WM_DELETE_WINDOW", self.close_connection)
 
     def init_home_page(self):
         self.title_label = ttk.Label(self.home_frame, text="Situation de Marché au mois de", font=("Arial", 16, "bold"))
@@ -50,29 +53,33 @@ class MarketApp:
         self.bottom_frame.pack(fill=tk.BOTH, expand=True)
         self.canvas = tk.Canvas(self.bottom_frame, width=800, height=600, bg="#F0F8FF")
         self.canvas.pack()
-        self.markets = Market.getMarkets()
+        self.markets = Market.getMarkets(self.conn)
         self.update_title()
         self.displayMarkets()
 
     def init_payment_page(self):
         self.payment_label = ttk.Label(self.payment_frame, text="Faire un paiement", font=("Arial", 16, "bold"))
         self.payment_label.pack(pady=5)
+        
         self.box_label = ttk.Label(self.payment_frame, text="Box:")
         self.box_label.pack(pady=5)
         self.box_var = tk.StringVar()
         self.box_select = ttk.Combobox(self.payment_frame, textvariable=self.box_var)
-        self.box_select['values'] = [box.get_idbox() for box in Box.getBoxs()]
+        self.box_select['values'] = [box.get_idbox() for box in Box.getBoxs(self.conn)]
         self.box_select.pack(pady=5)
+        
         self.date_label = ttk.Label(self.payment_frame, text="Date de paiement:")
         self.date_label.pack(pady=5)
         self.date_var = tk.StringVar()
         self.date_entry = DateEntry(self.payment_frame, textvariable=self.date_var, date_pattern='yyyy-mm-dd')
         self.date_entry.pack(pady=5)
+        
         self.amount_label = ttk.Label(self.payment_frame, text="Montant:")
         self.amount_label.pack(pady=5)
         self.amount_var = tk.StringVar()
         self.amount_entry = ttk.Entry(self.payment_frame, textvariable=self.amount_var)
         self.amount_entry.pack(pady=5)
+        
         self.payment_button = ttk.Button(self.payment_frame, text="Process Payment", command=self.process_payment)
         self.payment_button.pack(pady=5)
 
@@ -101,7 +108,7 @@ class MarketApp:
         long, larg = market.get_long(), market.get_larg()
         self.canvas.create_rectangle(x, y, x + long, y + larg, outline="#5A9", width=2)
         self.canvas.create_text(x + long / 2, y - 10, text=f"Market ID: {market.get_idmarket()}", fill="#5A9", font=("Helvetica", 10, "bold"))
-        boxes = market.getBoxs()
+        boxes = market.getBoxs(self.conn)
         for box in boxes:
             self.displayBox(box)
 
@@ -109,10 +116,10 @@ class MarketApp:
         x, y = box.get_x(), box.get_y()
         long, larg = box.get_long(), box.get_larg()
         yearmonth = self.yearmonth.get()
-        percent_paid = box.getPourcent(yearmonth)
+        percent_paid = box.getPourcent(self.conn, yearmonth)
         green_width = int(long * percent_paid)
         red_width = long - green_width
-        if(box.isBoxRented(yearmonth)==False):
+        if(box.isBoxRented(self.conn, yearmonth)==False):
             self.canvas.create_rectangle(x, y, x + long, y + larg, outline="#DAA520", fill="#DAA520", width=2)
         else:
             if green_width > 0:
@@ -125,11 +132,11 @@ class MarketApp:
         idbox = self.box_var.get()
         datepaiement = self.date_var.get()
         montant = self.amount_var.get()
-        box = Box.getBoxById(idbox)
+        box = Box.getBoxById(self.conn, idbox)
         if box:
             try:
                 montant = float(montant)
-                box.insertPaiement(datepaiement, montant)
+                box.insertPaiement(self.conn, datepaiement, montant)
                 messagebox.showinfo("Success", "Payment processed successfully.")
             except Exception as e:
                 messagebox.showerror("Error", f"Error processing payment: {str(e)}")
@@ -145,3 +152,8 @@ class MarketApp:
         flask_thread.daemon = True
         flask_thread.start()
         webbrowser.open('http://127.0.0.1:5000')
+
+    def close_connection(self):
+        if self.conn:
+            self.conn.close()
+        self.root.destroy()

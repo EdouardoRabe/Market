@@ -47,16 +47,14 @@ class Market:
         self.__rent = rent
 
     @staticmethod
-    def getMarkets():
-        conn = ConnexionAccess.getConnexion()
+    def getMarkets(conn):
         query = "SELECT * FROM markets"
         result = conn.cursor().execute(query)
         rows = result.fetchall()
         markets = [Market(*row) for row in rows]
         return markets
 
-    def getBoxs(self):
-        conn = ConnexionAccess.getConnexion()
+    def getBoxs(self, conn):
         query = "SELECT * FROM boxs WHERE idmarket = ?"
         result = conn.cursor().execute(query, (self.__idmarket,))
         rows = result.fetchall()

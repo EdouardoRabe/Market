@@ -59,8 +59,7 @@ class Box:
         print(f"{self.__idbox}\t{self.__idmarket}\t{self.__num}\t{self.__long}\t{self.__larg}\t{self.__x}\t{self.__y}")
 
     @staticmethod
-    def getBoxById(idbox):
-        conn = ConnexionAccess.getConnexion()
+    def getBoxById(conn, idbox):
         query = "SELECT * FROM boxs WHERE idbox = ?"
         result = conn.cursor().execute(query, (idbox,))
         row = result.fetchone()
@@ -69,31 +68,29 @@ class Box:
         return None
     
     @staticmethod
-    def getBoxs():
-        conn = ConnexionAccess.getConnexion()
+    def getBoxs(conn):
         query = "SELECT * FROM boxs"
         result = conn.cursor().execute(query)
         rows = result.fetchall()
         boxs = [Box(*row) for row in rows]
         return boxs
 
-    def calculRent(self, yearmonth):
-        periode = Periode.getPeriode(yearmonth)
-        rent_per_sqm = Rent.getRent(self.__idmarket, periode.get_idperiode())
+    def calculRent(self, conn, yearmonth):
+        periode = Periode.getPeriode(conn, yearmonth)
+        rent_per_sqm = Rent.getRent(conn ,self.__idmarket, periode.get_idperiode())
         area = self.__long * self.__larg
         total_rent = area * rent_per_sqm.get_montant()
         return total_rent
 
-    def getPourcent(self, yearmonth):
-        paiement = Paiement.getPaiement(yearmonth, self.__idbox)
+    def getPourcent(self,conn, yearmonth):
+        paiement = Paiement.getPaiement(conn,yearmonth, self.__idbox)
         if paiement is None:
             return 0
-        total_rent = self.calculRent(yearmonth)
+        total_rent = self.calculRent(conn , yearmonth)
         print(f"Total rent: { (paiement.get_montant() / total_rent)}")
         return (paiement.get_montant() / total_rent)
 
-    def insertPaiement(self, datepaiement, montant):
-        conn = ConnexionAccess.getConnexion()
+    def insertPaiement(self, conn,datepaiement, montant):
         cursor = conn.cursor()
         montant = float(montant)
         query = """
@@ -107,12 +104,12 @@ class Box:
         
         if last_yearmonth:
             last_yearmonth = last_yearmonth[0]
-            last_payment = Paiement.getPaiement(last_yearmonth, self.__idbox)
+            last_payment = Paiement.getPaiement(conn, last_yearmonth, self.__idbox)
             last_paied_date =last_payment.get_paied()
             next_paied_date = last_paied_date + relativedelta(months=1)
             last_payment_montant = last_payment.get_montant()
             print(f"Last payment: {last_payment_montant}")
-            rent = self.calculRent(last_yearmonth)
+            rent = self.calculRent(conn,last_yearmonth)
             if last_payment_montant < rent:
                 remaining_rent = rent - last_payment_montant
                 if montant >= remaining_rent:
@@ -128,7 +125,7 @@ class Box:
         
         while montant > 0:
             yearmonth = next_paied_date.strftime('%Y-%m')
-            rent = self.calculRent(yearmonth)
+            rent = self.calculRent(conn,yearmonth)
             if montant >= rent:
                 query = "INSERT INTO paiements (idbox, montant, paied, datepaiement) VALUES (?, ?, ?, ?)"
                 cursor.execute(query, (self.__idbox, rent, next_paied_date.strftime('%Y-%m-%d'), datepaiement))
@@ -140,10 +137,8 @@ class Box:
                 montant = 0
         
         conn.commit()
-        cursor.close()
-        conn.close()
         
-    def isBoxRented(self, yearmonth):
-        location = Location.getLocationByBoxAndYearMonth(self.__idbox, yearmonth)
+    def isBoxRented(self,conn, yearmonth):
+        location = Location.getLocationByBoxAndYearMonth(conn, self.__idbox, yearmonth)
         return location is not None
         
