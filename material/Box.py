@@ -1,10 +1,10 @@
 import datetime
 from dateutil.relativedelta import relativedelta
 from connexion import ConnexionAccess
-from tool import Periode, Rent, Paiement
+from tool import Location, Periode, Rent, Paiement
 
 class Box:
-    def __init__(self, idbox, idmarket, num, long, larg, x, y, idowner):
+    def __init__(self, idbox, idmarket, num, long, larg, x, y):
         self.__idbox = idbox
         self.__idmarket = idmarket
         self.__num = num
@@ -12,7 +12,6 @@ class Box:
         self.__larg = larg
         self.__x = x
         self.__y = y
-        self.__idowner = idowner
 
     def get_idbox(self):
         return self.__idbox
@@ -25,12 +24,6 @@ class Box:
 
     def set_idmarket(self, value):
         self.__idmarket = value
-
-    def get__idowner(self):
-        return self.__idowner
-
-    def set__idowner(self, value):
-        self.__idowner = value
 
     def get_num(self):
         return self.__num
@@ -149,3 +142,8 @@ class Box:
         conn.commit()
         cursor.close()
         conn.close()
+        
+    def isBoxRented(self, yearmonth):
+        location = Location.getLocationByBoxAndYearMonth(self.__idbox, yearmonth)
+        return location is not None
+        

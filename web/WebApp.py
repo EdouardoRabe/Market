@@ -38,6 +38,6 @@ class WebApp:
                 message = 'Box not found.'
                 message_type = 'error'
             return redirect(url_for('payment', message=message, message_type=message_type))
-
+        
     def run(self, host='127.0.0.1', port=5000):
         self.app.run(debug=False, host=host, port=port)
