@@ -25,14 +25,12 @@ class Periode:
         self.__fin = fin
 
     @staticmethod
-    def getPeriode(yearMonth):
+    def getPeriode(conn, yearMonth):
         month = int(yearMonth.split('-')[1])
-        conn = ConnexionAccess.getConnexion()
         query = "SELECT idperiode, debut, fin FROM periodes WHERE ? BETWEEN debut AND fin"
         cursor = conn.cursor()
         cursor.execute(query, (month,))
         row = cursor.fetchone()
-        conn.close()
         if row:
             return Periode(row[0], row[1], row[2])
         else:
