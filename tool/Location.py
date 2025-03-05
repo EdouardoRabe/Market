@@ -1,7 +1,3 @@
-import sqlite3
-
-from connexion import ConnexionAccess
-
 class Location:
     def __init__(self, idlocation, idbox, idowner, debut, fin):
         self.__idlocation = idlocation
@@ -41,13 +37,30 @@ class Location:
         self.__fin = value
         
     @staticmethod
-    def getLocationByBoxAndYearMonth(conn,idbox, yearmonth):
+    def getLocationByBoxAndYearMonth(conn, idbox, yearmonth):
         query = """
         SELECT * FROM locations 
-        WHERE idbox = ? AND ? BETWEEN FORMAT(debut, 'yyyy-mm') AND FORMAT(fin, 'yyyy-mm')
+        WHERE idbox = ? AND 
+        (
+            (? BETWEEN FORMAT(debut, 'yyyy-mm') AND FORMAT(fin, 'yyyy-mm') AND fin IS NOT NULL) 
+            OR 
+            (fin IS NULL AND FORMAT(debut, 'yyyy-mm') <= ?)
+        )
         """
-        result = conn.cursor().execute(query, (idbox, yearmonth))
+        result = conn.cursor().execute(query, (idbox, yearmonth, yearmonth))
         row = result.fetchone()
         if row:
             return Location(*row)
         return None
+    
+   
+    @staticmethod
+    def getLocationByOwner(conn, idowner):
+        query = """
+        SELECT * FROM locations 
+        WHERE idowner = ? 
+        """
+        result = conn.cursor().execute(query, (idowner,))
+        rows = result.fetchall()
+        locations = [Location(*row) for row in rows]
+        return locations

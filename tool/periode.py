@@ -1,39 +1,36 @@
 from connexion import ConnexionAccess
 
 class Periode:
-    def __init__(self, idperiode, debut, fin):
+    def __init__(self, idperiode, depuis):
         self.__idperiode = idperiode
-        self.__debut = debut
-        self.__fin = fin
+        self.__depuis = depuis
 
     def get_idperiode(self):
         return self.__idperiode
 
-    def get_debut(self):
-        return self.__debut
-
-    def get_fin(self):
-        return self.__fin
+    def get_depuis(self):
+        return self.__depuis
 
     def set_idperiode(self, idperiode):
         self.__idperiode = idperiode
 
-    def set_debut(self, debut):
-        self.__debut = debut
-
-    def set_fin(self, fin):
-        self.__fin = fin
+    def set_depuis(self, depuis):
+        self.__depuis = depuis
 
     @staticmethod
-    def getPeriode(yearMonth):
-        month = int(yearMonth.split('-')[1])
-        conn = ConnexionAccess.getConnexion()
-        query = "SELECT idperiode, debut, fin FROM periodes WHERE ? BETWEEN debut AND fin"
+    def getPeriode(conn, yearMonth):
+        query = """
+            SELECT TOP 1 idperiode, depuis 
+            FROM periodes 
+            WHERE FORMAT(depuis, 'yyyy-MM') <= ? 
+            ORDER BY depuis DESC
+        """
         cursor = conn.cursor()
-        cursor.execute(query, (month,))
+        cursor.execute(query, (yearMonth,))
         row = cursor.fetchone()
-        conn.close()
         if row:
-            return Periode(row[0], row[1], row[2])
+            return Periode(row[0], row[1].strftime('%Y-%m'))
         else:
-            return None
+            return Periode(1, None)
+    
+    
