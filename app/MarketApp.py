@@ -258,34 +258,40 @@ class MarketApp:
         owner_name = self.owner_var.get()
         datepaiement = self.date_var.get()
         montant = self.amount_var.get()
-        
-        box1=None
-        location1=None
         try:
             montant = float(montant)
             owner = next(owner for owner in Owner.getOwners(self.conn) if f"{owner.get_name()} {owner.get_firstname()}" == owner_name)
             owner_boxes = Box.getBoxByIdOwner(self.conn, owner.get_idowner())
             owner_locations = Location.getLocationByOwner(self.conn, owner.get_idowner())
-            for location in owner_locations:
-                if location.get_fin() is not None:
-                    current_date = location.get_debut()
-                    fin_location = location.get_fin()
-                    while current_date <= fin_location:
+            if not any(box.get_idbox() == int(idbox) for box in owner_boxes):
+                messagebox.showerror("Error", "Le box spécifié n'appartient pas à cet owner.")
+                return
+            start_dates = [location.get_debut() for location in owner_locations]
+            start_dates.sort()
+            current_date = start_dates[0]
+            has_no_end_date = any(location.get_fin() is None for location in owner_locations)
+            latest_end_date = None
+            if not has_no_end_date:
+                end_dates = [location.get_fin() for location in owner_locations if location.get_fin() is not None]
+                end_dates.sort(reverse=True)
+                latest_end_date = end_dates[0] if end_dates else None
+            owner_locations.sort(key=lambda loc: (loc.get_idbox() != int(idbox), loc.get_debut()))
+            while montant > 0:
+                for location in owner_locations:
+                    print(location.get_idbox())
+                    box = Box.getBoxById(self.conn, location.get_idbox())
+                    if box:
                         yearmonth = current_date.strftime('%Y-%m')
-                        box = Box.getBoxById(self.conn, location.get_idbox())
-                        if box:
+                        if location.get_debut().strftime('%Y-%m') <= yearmonth and (location.get_fin() is None or yearmonth <= location.get_fin().strftime('%Y-%m')):
+                            fin_location = location.get_fin()
                             montant = box.insertPaiement(self.conn, datepaiement, montant, yearmonth, fin_location)
-                        current_date += relativedelta(months=1)
-                if location.get_fin() is None and location.get_idbox()==int(idbox):
-                    box1 = Box.getBoxById(self.conn, location.get_idbox())
-                    location1 = location
-                    
-            if box1 is not None and location1 is not None:
-                montant = box1.insertPaiement(self.conn, datepaiement, montant, location1.get_debut().strftime('%Y-%m'), location1.get_fin())
 
+                current_date += relativedelta(months=1)
+                if latest_end_date and current_date.strftime('%Y-%m') > latest_end_date.strftime('%Y-%m'):
+                    break
             if montant > 0:
-                messagebox.showinfo("Success", "Rent already paied")
-            else:    
+                messagebox.showinfo("Success", f"Payment processed successfully. Remaining amount: {montant}")
+            else:
                 messagebox.showinfo("Success", "Payment processed successfully.")
         except Exception as e:
             messagebox.showerror("Error", f"Error processing payment: {str(e)}")

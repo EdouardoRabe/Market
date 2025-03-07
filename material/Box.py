@@ -100,55 +100,40 @@ class Box:
         print(f"Total rent: { (paiement.get_montant() / total_rent)}")
         return (paiement.get_montant() / total_rent)
 
-    def insertPaiement(self, conn, datepaiement, montant, yearmonth=None, fin_location=None):
+
+    def insertPaiement(self, conn, datepaiement, montant, yearmonth, fin_location=None):
+        if montant == 0:
+            return montant
         cursor = conn.cursor()
         montant = float(montant)
-        if yearmonth is None:
-            query = """
-                SELECT TOP 1 FORMAT(paied, 'yyyy-MM') as yearmonth 
-                FROM paiements 
-                WHERE idbox = ? 
-                ORDER BY paied DESC
-            """
-            result = cursor.execute(query, (self.__idbox,))
-            last_yearmonth = result.fetchone()
-            if last_yearmonth:
-                yearmonth = last_yearmonth[0]
+        if fin_location and datetime.datetime.strptime(yearmonth, '%Y-%m') > fin_location:
+            return montant
+        rent = self.calculRent(conn, yearmonth)
+        paiement = Paiement.getPaiement(conn, yearmonth, self.__idbox)
+        if paiement:
+            remaining_rent = rent - paiement.get_montant()
+            if remaining_rent == 0:
+                return montant
+            if montant >= remaining_rent:
+                query = "INSERT INTO paiements (idbox, montant, paied, datepaiement) VALUES (?, ?, ?, ?)"
+                cursor.execute(query, (self.__idbox, remaining_rent, yearmonth + '-01', datepaiement))
+                montant -= remaining_rent
             else:
-                yearmonth = datetime.datetime(2024, 1, 1).strftime('%Y-%m')
-
-        while montant > 0:
-            print(f"yearmonth: {yearmonth}", f"fin_location: {fin_location}",f"idbox: {self.__idbox}")
-            if fin_location and datetime.datetime.strptime(yearmonth, '%Y-%m') > fin_location:
-                break
-
-            rent = self.calculRent(conn, yearmonth)
-            paiement = Paiement.getPaiement(conn, yearmonth, self.__idbox)
-            if paiement:
-                remaining_rent = rent - paiement.get_montant()
-                if remaining_rent == 0:
-                    pass
-                elif montant >= remaining_rent:
-                    query = "INSERT INTO paiements (idbox, montant, paied, datepaiement) VALUES (?, ?, ?, ?)"
-                    cursor.execute(query, (self.__idbox, remaining_rent, yearmonth + '-01', datepaiement))
-                    montant -= remaining_rent
-                else:
-                    query = "INSERT INTO paiements (idbox, montant, paied, datepaiement) VALUES (?, ?, ?, ?)"
-                    cursor.execute(query, (self.__idbox, montant, yearmonth + '-01', datepaiement))
-                    montant = 0
+                query = "INSERT INTO paiements (idbox, montant, paied, datepaiement) VALUES (?, ?, ?, ?)"
+                cursor.execute(query, (self.__idbox, montant, yearmonth + '-01', datepaiement))
+                montant = 0
+        else:
+            if montant >= rent:
+                query = "INSERT INTO paiements (idbox, montant, paied, datepaiement) VALUES (?, ?, ?, ?)"
+                cursor.execute(query, (self.__idbox, rent, yearmonth + '-01', datepaiement))
+                montant -= rent
             else:
-                if montant >= rent:
-                    query = "INSERT INTO paiements (idbox, montant, paied, datepaiement) VALUES (?, ?, ?, ?)"
-                    cursor.execute(query, (self.__idbox, rent, yearmonth + '-01', datepaiement))
-                    montant -= rent
-                else:
-                    query = "INSERT INTO paiements (idbox, montant, paied, datepaiement) VALUES (?, ?, ?, ?)"
-                    cursor.execute(query, (self.__idbox, montant, yearmonth + '-01', datepaiement))
-                    montant = 0
-            yearmonth = (datetime.datetime.strptime(yearmonth, '%Y-%m') + relativedelta(months=1)).strftime('%Y-%m')
-
+                query = "INSERT INTO paiements (idbox, montant, paied, datepaiement) VALUES (?, ?, ?, ?)"
+                cursor.execute(query, (self.__idbox, montant, yearmonth + '-01', datepaiement))
+                montant = 0
         conn.commit()
         return montant
+
         
     def isBoxRented(self,conn, yearmonth):
         location = Location.getLocationByBoxAndYearMonth(conn, self.__idbox, yearmonth)
